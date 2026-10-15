@@ -8,7 +8,7 @@ Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, l
 | # | Gap | Evidence | Vendor-native fix | Status |
 |---|---|---|---|---|
 | G1 | Floating tag `@v5` can be repointed (supply chain) | smoke workflows use `1password/load-secrets-action@v5`; GitHub Secure Use: pin full-length SHA, lockfiles supersede | Pin `70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1`; Dependabot github-actions bumps SHA+comment | DONE 2026-10-14, runs 38669988882/38669992430/38669996193 success |
-| G2 | Org secret visible to ALL repos incl. public (OmniRoute, excalidraw) = broad Development-vault blast radius | Org secret visibility "All repositories" | Tier: org secret -> Private repositories; separate public-tier SA scoped to a new "GitHub Actions: Public CI" vault (canary + public-safe items only), stored as repo secret on public repos (repo secret overrides org, workflow unchanged) | NEEDS 1Password UI (vault+SA create); desktop CLI integration down, SA cannot create vaults/SAs |
+| G2 | Org secret visible to ALL repos incl. public (OmniRoute, excalidraw) = broad Development-vault blast radius | Org secret visibility was "All repositories" | Org secret visibility Private repositories; CI service account reads vault Automation only | DONE 2026-10-15. Private visibility confirmed in org settings. Public-tier SA still not created. |
 | G3 | Canary depends on unrelated Context7 item (owner can rotate/delete -> false outage) | `OP_SA_CANARY_REF` -> Context7 item `2abogizfsusjkpz2432bastcdq` | Dedicated item `5nawishhkdi4wneaosuxwcypqq` "GitHub Actions - CI - Canary" | DONE 2026-10-14, org secret updated, canary length 30 verified |
 | G4 | No scheduled verification (silent token expiry/rotation breakage) | smoke is dispatch-only | Native cron `17 14 * * 1` UTC weekly in smoke workflow | DONE 2026-10-14 (first scheduled run next Monday) |
 | G5 | Required-workflow enforcement unavailable | Org plan = Team; GitHub docs: "Require workflows to pass" ruleset rule is Enterprise Cloud only | Fallback (native, Team): org workflow templates + org secrets (done) + repo ruleset requiring the local smoke status check where wanted. Re-evaluate on Enterprise upgrade | DOCUMENTED, plan-gated |
@@ -40,10 +40,13 @@ Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, l
 
 
 ## Live correction 2026-10-15
-- Fact: G2 visibility half is done (private only). Public-tier vault/SA is not done.
+- Fact: G2 visibility is done. OP secrets and the nine leftover copied secrets are Private repositories. Public-tier SA is still not created.
+- Fact: CI identity is `GitHub Actions - Automation - Read` on vault `zacszu4fq4wmuk7qnp7ehvhhxa` only. Old account `IHUUPYTFPVANVAYJJ7GGC6AIZU` is revoked (404 at 2026-10-15T11:50:01Z).
+- Fact: Canary ref is `op://zacszu4fq4wmuk7qnp7ehvhhxa/bzbi3u57ugktaqq72ug66kjwxq/credential`. Proof runs 38729448988 and 38729443509 succeeded on active private repos.
+- Fact: `OP_VAULT_ID` is `zacszu4fq4wmuk7qnp7ehvhhxa`, Private repositories. Older lines that name `dfncpo4o2wrkjf6f3zo6zu35ta` or `--visibility all` are stale.
 - Fact: Hand-written canary shell removed from op-canary.yml at 337cdf16ae843cbfa8036f876d38c8f4aab98d04.
-- Fact: universal-systems main pin is stale until https://github.com/Empathy-First-Media/universal-systems/pull/88 merges. Ruleset blocked a direct push. That block is correct.
-- Fact: bootstrap-op-secrets.sh removed from dlynch90/op-actions-template so it cannot recopy the exposed token.
+- Fact: bootstrap-op-secrets.sh must not be used. It recopied an exposed token.
+- Bad Pattern: follow README or runbook text that says visibility all repositories. That text is corrected on this commit.
 
 ## Sock audit 2026-10-15
 - Fact: SUPERSEDED. "Desktop integration is down" is too broad. The sockets connect. Aside's sandbox cannot see the 1Password app bundle or signal the stale `op` helper processes. That is why rotation is blocked here, not because the sock file is missing.
