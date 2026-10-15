@@ -20,3 +20,11 @@ Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, l
 
 ## Determinism rules adopted
 - Fact: Action refs = full SHA + version comment only. Cron = `17 14 * * 1` UTC weekly. Canary = dedicated item ID. Refs = vault/item IDs only. One org secret per tier. Every change validated by a fresh dispatch run ID, never by config inspection alone.
+
+## Addendum 2026-10-14 (second evaluation)
+- Fact: Smoke logic was duplicated per repo (drift risk). FIXED: central reusable `Empathy-First-Media/.github/.github/workflows/op-canary.yml@4cccef1720b7af877719a89647873de839c71b5a`; repos keep only a scheduling caller with `secrets: inherit`. Runs 38670252575/38670256397/38670260580 success (canary length 30). Template updated to caller form. Update once in `.github`, Dependabot bumps caller pins.
+- Fact: Runner floated on `ubuntu-latest`. FIXED: reusable pins `ubuntu-24.04`.
+- Fact: No repo rulesets in any org repo (`rulesets: []`); CODEOWNERS exists in universal-systems/backstage/OmniRoute but nothing enforces review of workflow changes. Native fix: repo ruleset requiring CODEOWNERS review for `.github/workflows/**` (Team-supported). Owner decision (merge friction).
+- Fact: OmniRoute + excalidraw lack dependabot-auto-merge; SHA-bump PRs need manual merge there.
+- Fact: System still proves a canary only; no production secret has migrated to `op://` yet (G9). Highest-value next step: pilot one low-risk secret in universal-systems, then delete its GitHub copy.
+- Fact: Failure signal = scheduled run + watcher email only. Native upgrade: `if: failure()` issue creation with `GITHUB_TOKEN` (read default confirmed org-wide) — deferred, adds write need.
