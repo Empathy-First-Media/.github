@@ -50,3 +50,10 @@ Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
 - Fact: Exposed service account is NOT revoked. Aside cannot rotate it. Native Terminal can.
 - Fact: OmniRoute runs 38665887323 and 38666939667 are still queued. Cancel returns 409. They have not expired.
 - Fact: Canary workflow no longer has a custom shell check. Vendor action failure is the check. Callers that can push pin 337cdf16ae843cbfa8036f876d38c8f4aab98d04. universal-systems main is still on 4cccef17 until PR 88 merges.
+
+## Sock audit 2026-10-15 05:15 ET (supersedes "desktop app is down")
+- Fact: `~/.config/op/op-daemon.sock` is a live socket. `connect()` succeeds. It is not a dead file.
+- Fact: These also accept connections: Group Containers `t/s.sock`, `t/agent.sock`, and `/var/folders/_j/494ynvld7r368yhyjf7dggd00000gn/T/op-daemon.sock`.
+- Fact: Three `op` helpers hold those sockets and Aside cannot signal them: pid 13394 is brew `op` 2.41.0, pid 79624 is mise `op` 2.40.0, pid 28528 is `2.40.0.upgrading`. `kill` returns Operation not permitted.
+- Fact: `op account list` from Aside still fails in 34ms with the desktop-app connection error. The 1Password app process is running and listening on `s.sock`. Aside cannot read `/Applications/1Password.app` (`sandbox_extension_issue_file` Operation not permitted) and `open -a 1Password` returns "Unable to find application named 1Password".
+- Fact: This session cannot restart the app, kill the stale helpers, or complete revocation. Native Terminal was reported working by another session. That was not re-verified here.
