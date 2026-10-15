@@ -34,6 +34,13 @@ Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, l
 - Fact: P0 defect. The GitHub Actions service-account token was rendered into this session's page snapshot while the org secret form was filled. Treat item `zn4exefxr4kxiwzgrvamcan3nm` as exposed. Rotation blocked here: `op service-account create` returns "authenticated as a service account" (exit 9); desktop app integration is down, so a user session cannot create the replacement.
 - Fact: Same token is still set on dlynch90/developer-platform, chezmoi, developer-ecosystem, BRIO-APP-BACKUP, op-actions-template. Personal Actions remain billing-locked. Those copies stay valid until the old SA is revoked.
 - Fact: OmniRoute runs 38665887323 and 38666939667 are still `queued` with null conclusion. Cancel returns 409. Earlier "they will expire" claim remains unverified.
-- Fact: Org secret visibility is still All repositories, including public OmniRoute and excalidraw. G2 not fixed.
+- Fact: SUPERSEDED 2026-10-15. Org OP secrets are Private repositories. Public-tier service account is still not created. Old SA is not revoked.
 - Fact: No production secret has moved to `op://`. The green runs prove the canary only.
 - Bad Pattern this session: direct commits to default branches, no PR review; floating claims before re-check (stuck-run expiry, "FIXING NOW" marked before validation).
+
+
+## Live correction 2026-10-15
+- Fact: G2 visibility half is done (private only). Public-tier vault/SA is not done.
+- Fact: Hand-written canary shell removed from op-canary.yml at 337cdf16ae843cbfa8036f876d38c8f4aab98d04.
+- Fact: universal-systems main pin is stale until https://github.com/Empathy-First-Media/universal-systems/pull/88 merges. Ruleset blocked a direct push. That block is correct.
+- Fact: bootstrap-op-secrets.sh removed from dlynch90/op-actions-template so it cannot recopy the exposed token.
