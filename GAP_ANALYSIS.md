@@ -28,3 +28,12 @@ Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, l
 - Fact: OmniRoute + excalidraw lack dependabot-auto-merge; SHA-bump PRs need manual merge there.
 - Fact: System still proves a canary only; no production secret has migrated to `op://` yet (G9). Highest-value next step: pilot one low-risk secret in universal-systems, then delete its GitHub copy.
 - Fact: Failure signal = scheduled run + watcher email only. Native upgrade: `if: failure()` issue creation with `GITHUB_TOKEN` (read default confirmed org-wide) — deferred, adds write need.
+
+## Transcript judgment 2026-10-14 (live re-check)
+- Fact: Org callers still pin `op-canary.yml@4cccef1720b7af877719a89647873de839c71b5a`. Latest runs still success: 38670252575, 38670256397, 38670260580. Canary item `5nawishhkdi4wneaosuxwcypqq` still readable by the GitHub Actions SA. Org repos have zero per-repo OP secrets.
+- Fact: P0 defect. The GitHub Actions service-account token was rendered into this session's page snapshot while the org secret form was filled. Treat item `zn4exefxr4kxiwzgrvamcan3nm` as exposed. Rotation blocked here: `op service-account create` returns "authenticated as a service account" (exit 9); desktop app integration is down, so a user session cannot create the replacement.
+- Fact: Same token is still set on dlynch90/developer-platform, chezmoi, developer-ecosystem, BRIO-APP-BACKUP, op-actions-template. Personal Actions remain billing-locked. Those copies stay valid until the old SA is revoked.
+- Fact: OmniRoute runs 38665887323 and 38666939667 are still `queued` with null conclusion. Cancel returns 409. Earlier "they will expire" claim remains unverified.
+- Fact: Org secret visibility is still All repositories, including public OmniRoute and excalidraw. G2 not fixed.
+- Fact: No production secret has moved to `op://`. The green runs prove the canary only.
+- Bad Pattern this session: direct commits to default branches, no PR review; floating claims before re-check (stuck-run expiry, "FIXING NOW" marked before validation).
