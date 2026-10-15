@@ -2,8 +2,8 @@
 Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
 
 ## Architecture (single source of truth)
-- Fact: Org secret `OP_SERVICE_ACCOUNT_TOKEN` (All repositories) = token of 1Password item `zn4exefxr4kxiwzgrvamcan3nm` "1Password - Development - Service Account Token (GitHub Actions)", vault `dfncpo4o2wrkjf6f3zo6zu35ta` (Development: Global Fallback), read-only.
-- Fact: Org secret `OP_SA_CANARY_REF` (All repositories) = `op://dfncpo4o2wrkjf6f3zo6zu35ta/5nawishhkdi4wneaosuxwcypqq/credential` (dedicated canary item "GitHub Actions - CI - Canary", dummy value, a ref not a real secret).
+- Fact: Org secret `OP_SERVICE_ACCOUNT_TOKEN` (Private repositories, changed 2026-10-15) = token of 1Password item `zn4exefxr4kxiwzgrvamcan3nm` "1Password - Development - Service Account Token (GitHub Actions)", vault `dfncpo4o2wrkjf6f3zo6zu35ta` (Development: Global Fallback), read-only.
+- Fact: Org secret `OP_SA_CANARY_REF` (Private repositories, changed 2026-10-15) = `op://dfncpo4o2wrkjf6f3zo6zu35ta/5nawishhkdi4wneaosuxwcypqq/credential` (dedicated canary item "GitHub Actions - CI - Canary", dummy value, a ref not a real secret).
 - Fact: Org variable `OP_VAULT_ID` (All repositories) = `dfncpo4o2wrkjf6f3zo6zu35ta`.
 - Good Pattern: No per-repo OP secrets in this org. Repo secrets with the same name override org; do not add them except for a temporary rotation test.
 - Good Pattern: Workflows load secrets live: `1password/load-secrets-action@v5` with `OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}` and `NAME: op://${{ vars.OP_VAULT_ID }}/<item-id>/credential`. Outputs are masked.
@@ -29,7 +29,7 @@ Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
 ## Troubleshooting
 - Fact: Run stuck `queued` with no jobs = repo Actions disabled. Fix: repo Settings > Actions, or `gh api --method PUT repos/<owner>/<repo>/actions/permissions -F enabled=true -f allowed_actions=all` (fixed OmniRoute 2026-10-14, run 38667107120 then passed in 11s).
 - Fact: `startup_failure` on every run in `dlynch90` personal repos = personal account billing lock ("account is locked due to a billing issue", run 38665791754). Org unaffected. Fix billing, then re-dispatch.
-- Fact: Canary empty = check org secret exists + SA still has vault read; test locally: `OP_SERVICE_ACCOUNT_TOKEN=$(cat ~/.config/1password/service-account-token) op read 'op://dfncpo4o2wrkjf6f3zo6zu35ta/2abogizfsusjkpz2432bastcdq/credential'` (boolean only, never print).
+- Fact: Canary empty = check org secret exists + SA still has vault read; test locally: `OP_SERVICE_ACCOUNT_TOKEN=$(cat ~/.config/1password/service-account-token) op read 'op://dfncpo4o2wrkjf6f3zo6zu35ta/5nawishhkdi4wneaosuxwcypqq/credential'` (boolean only, never print).
 - Fact: Archived repos (e.g. `dlynch90/developer-ecosystem`) reject workflow files by design.
 
 ## Validated inventory (2026-10-14)
@@ -40,3 +40,13 @@ Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
 | OmniRoute | 38667107120 | success 11s |
 | op-newrepo-proof (archived) | 38666635572 | success 15s |
 | excalidraw | n/a (upstream fork, no workflow file added; org secret still applies if one is added) | documented |
+
+
+## Live correction 2026-10-15 (supersedes conflicting lines above)
+- Fact: OP_SERVICE_ACCOUNT_TOKEN and OP_SA_CANARY_REF visibility is Private repositories. Re-checked in the org settings UI.
+- Fact: OP_VAULT_ID is still All repositories. It is a vault ID, not a secret.
+- Fact: Public OmniRoute caller was removed. Do not treat run 38667107120 as current coverage.
+- Fact: Personal dlynch90 copies of both OP secrets were deleted. Count is 0.
+- Fact: Exposed service account is NOT revoked. Aside cannot rotate it. Native Terminal can.
+- Fact: OmniRoute runs 38665887323 and 38666939667 are still queued. Cancel returns 409. They have not expired.
+- Fact: Canary workflow no longer has a custom shell check. Vendor action failure is the check. Callers that can push pin 337cdf16ae843cbfa8036f876d38c8f4aab98d04. universal-systems main is still on 4cccef17 until PR 88 merges.
