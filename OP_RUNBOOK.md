@@ -3,7 +3,7 @@ Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
 
 ## Architecture (single source of truth)
 - Fact: Org secret `OP_SERVICE_ACCOUNT_TOKEN` (All repositories) = token of 1Password item `zn4exefxr4kxiwzgrvamcan3nm` "1Password - Development - Service Account Token (GitHub Actions)", vault `dfncpo4o2wrkjf6f3zo6zu35ta` (Development: Global Fallback), read-only.
-- Fact: Org secret `OP_SA_CANARY_REF` (All repositories) = `op://dfncpo4o2wrkjf6f3zo6zu35ta/2abogizfsusjkpz2432bastcdq/credential` (a ref, not a value).
+- Fact: Org secret `OP_SA_CANARY_REF` (All repositories) = `op://dfncpo4o2wrkjf6f3zo6zu35ta/5nawishhkdi4wneaosuxwcypqq/credential` (dedicated canary item "GitHub Actions - CI - Canary", dummy value, a ref not a real secret).
 - Fact: Org variable `OP_VAULT_ID` (All repositories) = `dfncpo4o2wrkjf6f3zo6zu35ta`.
 - Good Pattern: No per-repo OP secrets in this org. Repo secrets with the same name override org; do not add them except for a temporary rotation test.
 - Good Pattern: Workflows load secrets live: `1password/load-secrets-action@v5` with `OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}` and `NAME: op://${{ vars.OP_VAULT_ID }}/<item-id>/credential`. Outputs are masked.
@@ -12,7 +12,7 @@ Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
 ## New repo (automatic)
 1. Create the repo in Empathy-First-Media. Org secrets/variable already apply.
 2. Actions > New workflow > "1Password Secrets" (template in this repo), or copy `.github/workflows/op-secrets-smoke.yml` from universal-systems.
-3. Dispatch `op-secrets-smoke`. Expect success in ~15s and log "1Password load OK: canary non-empty (length 43…)".
+3. Dispatch `op-secrets-smoke`. Expect success in ~15s and log "1Password load OK: canary non-empty (length 30 for the dedicated canary)".
 4. Proof on file: fresh repo `op-newrepo-proof` passed run 38666635572 with zero per-repo secrets (archived after proof).
 
 ## Add a real secret to a workflow
