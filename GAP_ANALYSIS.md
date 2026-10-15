@@ -44,3 +44,6 @@ Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, l
 - Fact: Hand-written canary shell removed from op-canary.yml at 337cdf16ae843cbfa8036f876d38c8f4aab98d04.
 - Fact: universal-systems main pin is stale until https://github.com/Empathy-First-Media/universal-systems/pull/88 merges. Ruleset blocked a direct push. That block is correct.
 - Fact: bootstrap-op-secrets.sh removed from dlynch90/op-actions-template so it cannot recopy the exposed token.
+
+## Sock audit 2026-10-15
+- Fact: SUPERSEDED. "Desktop integration is down" is too broad. The sockets connect. Aside's sandbox cannot see the 1Password app bundle or signal the stale `op` helper processes. That is why rotation is blocked here, not because the sock file is missing.
