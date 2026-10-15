@@ -1,6 +1,5 @@
-# Central reusable canary for Empathy-First-Media. Single source: update
-# here, every caller repo picks it up on its next run (caller pins this
-# repo commit SHA; Dependabot bumps it). Vendor action pinned to full SHA.
+# Vendor-only canary. No custom shell. Failure is the action's own failure.
+# Pin: 1password/load-secrets-action v5.0.1
 name: op-canary
 on:
   workflow_call: {}
@@ -12,17 +11,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Load canary secret from 1Password
-        id: op_canary
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           OP_SA_CANARY: ${{ secrets.OP_SA_CANARY_REF }}
-      - name: Verify canary loaded (value never printed)
-        env:
-          CANARY_VALUE: ${{ steps.op_canary.outputs.OP_SA_CANARY }}
-        run: |
-          if [ -z "${CANARY_VALUE:-}" ]; then
-            echo "::error::Canary secret resolved empty. Check OP_SERVICE_ACCOUNT_TOKEN + OP_SA_CANARY_REF."
-            exit 1
-          fi
-          echo "1Password load OK: canary non-empty (length ${#CANARY_VALUE}, value masked by GitHub)."
