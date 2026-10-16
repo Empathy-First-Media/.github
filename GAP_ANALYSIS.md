@@ -1,4 +1,13 @@
-# Gap Analysis — 1Password x GitHub Actions (Empathy-First-Media)
+# Historical gap analysis — 1Password and GitHub Actions
+
+> **Historical record; not current operating guidance.**
+> Use [OP_RUNBOOK.md](OP_RUNBOOK.md) for the current canary contract and procedures.
+> Dates, account states, permissions, billing diagnoses, pins, and run results
+> below describe past observations and must be revalidated before use.
+> Unresolved proposals are retained, including production-secret migration,
+> dependency and identity pilots, and enforcement choices; this document does
+> not establish their current status or entitlement.
+
 Verified 2026-10-14. Sources: 1password.dev (GitHub Actions, Service Accounts, load-secrets-action README), docs.github.com (Secure use, Rulesets, Lockfiles). Vendor-native only; no custom code beyond vendor snippets + config.
 
 ## What was already right
