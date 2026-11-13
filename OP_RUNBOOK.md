@@ -1,59 +1,76 @@
-# 1Password for GitHub Actions — Empathy-First-Media Runbook
-Verified 2026-10-14 (op 2.41.0, load-secrets-action v5.0.1)
+# 1Password for GitHub Actions
 
-## Architecture (single source of truth)
-- Fact: Org secret `OP_SERVICE_ACCOUNT_TOKEN` (Private repositories, updated 2026-10-15) is the token for service account `GitHub Actions - Automation - Read`, integration `LLPJB3AULBBOZBLYJMXN6IEJQA`. It can read vault `Automation` (`zacszu4fq4wmuk7qnp7ehvhhxa`) only. The old Development-scoped account `IHUUPYTFPVANVAYJJ7GGC6AIZU` is revoked.
-- Fact: Org secret `OP_SA_CANARY_REF` (Private repositories, updated 2026-10-15) = `op://zacszu4fq4wmuk7qnp7ehvhhxa/bzbi3u57ugktaqq72ug66kjwxq/credential` (item `GitHub Actions - CI - Canary`). A ref, not a credential.
-- Fact: Org variable `OP_VAULT_ID` (Private repositories, updated 2026-10-15) = `zacszu4fq4wmuk7qnp7ehvhhxa`. Do not use `dfncpo4o2wrkjf6f3zo6zu35ta`.
-- Good Pattern: No per-repo OP secrets in this org. Repo secrets with the same name override org; do not add them except for a temporary rotation test.
-- Good Pattern: Workflows load secrets live. Pin `1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2` (`v5.0.1`). Env: `OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}` and `NAME: op://${{ vars.OP_VAULT_ID }}/<item-id>/credential`. Outputs are masked.
-- Bad Pattern: `op run` in CI, copied secret values in GitHub, name-based `op://` refs, fork-PR access to secrets (GitHub blocks it by design).
+## Configuration
 
-## New repo (automatic)
-1. Create the repo in Empathy-First-Media. Org secrets/variable already apply.
-2. Actions > New workflow > "1Password Secrets" (template in this repo), or copy `.github/workflows/op-secrets-smoke.yml` from universal-systems.
-3. Dispatch `op-secrets-smoke`. Expect the vendor action to succeed. Do not require a fixed canary length.
-4. Proof on file: fresh repo `op-newrepo-proof` passed run 38666635572 with zero per-repo secrets (archived after proof).
+Use organization Actions secrets scoped to **Private repositories**:
 
-## Add a real secret to a workflow
-1. Put/rotate the value in 1Password (ID-based item). Note item ID + field (`credential` for API Credential items).
-2. In the workflow load step env add: `MY_KEY: op://${{ vars.OP_VAULT_ID }}/<item-id>/credential`
-3. Consume `${{ steps.<load-step-id>.outputs.MY_KEY }}` or `export-env: true`. Never echo it.
+- `OP_SERVICE_ACCOUNT_TOKEN`: a service-account token with read access to the Automation vault only.
+- `OP_SA_CANARY_REF`: an ID-based `op://<vault-id>/<item-id>/<field>` reference to the dedicated canary.
+
+Confirm each private caller has access to both secrets. Do not broaden visibility
+to public repositories or add repository overrides with the same names.
+Keep the resolved canary in 1Password; do not copy its value into GitHub.
+Other workflows may use `OP_VAULT_ID` for ID-based references, but this canary
+uses only the two named secrets above. Never print tokens or resolved values.
+
+## Canary contract
+
+The caller template uses `.github/workflows/op-canary.yml` at:
+
+`7a7a2f9573fd2e86da775780bce528c7ec6ea2bd`
+
+The reusable workflow declares both secrets as required. It rejects an empty
+token or missing `op://` reference, calls the vendor action, and then requires
+a nonempty `steps.load_canary.outputs.OP_SA_CANARY`. It imposes no fixed length.
+
+Secret loading uses `1password/load-secrets-action` v5.0.1 pinned to
+`70062d7a876d3eb6334754fa26efd2fbd90c32f2`, with `export-env: false`.
+Authentication, reference resolution, and masking remain in the vendor action.
+Do not add an authentication wrapper or use `op run` in CI.
+
+## Install or update a caller
+
+1. In a private repository, choose **Actions > New workflow > 1Password Secrets**,
+   or copy [workflow-templates/op-secrets.yml](workflow-templates/op-secrets.yml).
+2. Keep the two explicit secret mappings. Confirm their organization access scope.
+3. For an existing caller, update its full commit pin through a reviewed PR.
+   Updating the shared workflow alone does not change callers pinned to older commits.
+4. Dispatch `op-secrets-smoke` and inspect the exact workflow revision and result.
+   Require success from the input check, vendor load, and nonempty-output check.
+
+A successful run verifies that caller at that time. Configuration inspection and
+older runs do not prove current authentication or production-secret coverage.
 
 ## Rotate the service account
-1. 1Password > Developer > Service Accounts: create a new read-only account on vault `zacszu4fq4wmuk7qnp7ehvhhxa` only. Keep the old account until step 4 passes.
-2. Org Settings > Secrets and variables > Actions: edit `OP_SERVICE_ACCOUNT_TOKEN`. CLI alternative after `gh auth refresh -h github.com -s admin:org`: `op read 'op://zacszu4fq4wmuk7qnp7ehvhhxa/<sa-item-id>/credential' | gh secret set OP_SERVICE_ACCOUNT_TOKEN --org Empathy-First-Media --visibility private`. Never print the token. Never use `--visibility all`.
-3. Dispatch `op-secrets-smoke` in universal-systems + backstage. Expect green.
-4. Delete the old service account in 1Password. Re-dispatch smoke once more.
+
+1. Create a replacement read-only service account for the Automation vault in
+   1Password. Keep the existing account available until the replacement passes.
+2. Update `OP_SERVICE_ACCOUNT_TOKEN` in organization **Settings > Secrets and
+   variables > Actions**, preserving **Private repositories** visibility.
+   Use the native secret editor or `gh secret set`; never put the token in logs.
+3. Dispatch current canary callers using the replacement. Check every affected
+   consumer before retiring the old account; do not treat one caller as all coverage.
+4. If verification fails, restore the previous organization secret if needed,
+   diagnose the failing step, and verify the replacement before continuing.
+5. Revoke the old service account in 1Password after its consumers pass with
+   the replacement. Dispatch the canary again after revocation.
 
 ## Troubleshooting
-- Fact: Run stuck `queued` with no jobs = repo Actions disabled. Fix: repo Settings > Actions, or `gh api --method PUT repos/<owner>/<repo>/actions/permissions -F enabled=true -f allowed_actions=all` (fixed OmniRoute 2026-10-14, run 38667107120 then passed in 11s).
-- Fact: `startup_failure` on every run in `dlynch90` personal repos = personal account billing lock ("account is locked due to a billing issue", run 38665791754). Org unaffected. Fix billing, then re-dispatch.
-- Fact: Canary failure = org secret missing, or the service account cannot read vault `zacszu4fq4wmuk7qnp7ehvhhxa`. Test with a boolean read of `op://zacszu4fq4wmuk7qnp7ehvhhxa/bzbi3u57ugktaqq72ug66kjwxq/credential`. Never print the value.
-- Fact: Archived repos (e.g. `dlynch90/developer-ecosystem`) reject workflow files by design.
 
-## Validated inventory (2026-10-14)
-| Repo | Smoke run | Result |
-|---|---|---|
-| universal-systems | 38667238376 (org secret only) | success 10s |
-| backstage | 38667190843 (org secret only) | success 10s |
-| OmniRoute | 38667107120 | success 11s |
-| op-newrepo-proof (archived) | 38666635572 | success 15s |
-| excalidraw | n/a (upstream fork, no workflow file added; org secret still applies if one is added) | documented |
+- **Input check fails:** confirm access to both named secrets and an ID-based reference.
+- **Vendor load fails:** inspect the action error for authentication, reference,
+  vault-permission, or service/connectivity problems. Do not print secret values.
+- **Output check fails:** the action did not provide a nonempty `OP_SA_CANARY` output.
+  Check the dedicated field and output wiring; preserve the failure check.
+- **Queued or startup failure:** inspect GitHub's run annotations and repository
+  Actions settings, policies, runner availability, concurrency, and usage/billing.
+  The status alone does not establish which of these caused the problem.
 
+## Maintenance
 
-## Live correction 2026-10-15 (supersedes conflicting lines above)
-- Fact: OP_SERVICE_ACCOUNT_TOKEN and OP_SA_CANARY_REF visibility is Private repositories.
-- Fact: OP_VAULT_ID is Private repositories and equals `zacszu4fq4wmuk7qnp7ehvhhxa`. The old Development id is retired for CI.
-- Fact: Public OmniRoute caller was removed. Do not treat run 38667107120 as current coverage.
-- Fact: Old service account `IHUUPYTFPVANVAYJJ7GGC6AIZU` is revoked. Direct URL returned 404 at 2026-10-15T11:50:01Z. Replacement `GitHub Actions - Automation - Read` is Active.
-- Fact: Proof after the Automation token: universal-systems run 38729448988 and backstage run 38729443509, both success on main, no repo OP override, neither repo archived.
-- Fact: Canary workflow has no custom shell check. Vendor action failure is the check. Callers pin `337cdf16ae843cbfa8036f876d38c8f4aab98d04`.
-- Bad Pattern: `--visibility all`. Do not follow older lines in this file that say that.
-
-## Sock audit 2026-10-15 05:15 ET (supersedes "desktop app is down")
-- Fact: `~/.config/op/op-daemon.sock` is a live socket. `connect()` succeeds. It is not a dead file.
-- Fact: These also accept connections: Group Containers `t/s.sock`, `t/agent.sock`, and `/var/folders/_j/494ynvld7r368yhyjf7dggd00000gn/T/op-daemon.sock`.
-- Fact: Three `op` helpers hold those sockets and Aside cannot signal them: pid 13394 is brew `op` 2.41.0, pid 79624 is mise `op` 2.40.0, pid 28528 is `2.40.0.upgrading`. `kill` returns Operation not permitted.
-- Fact: `op account list` from Aside still fails in 34ms with the desktop-app connection error. The 1Password app process is running and listening on `s.sock`. Aside cannot read `/Applications/1Password.app` (`sandbox_extension_issue_file` Operation not permitted) and `open -a 1Password` returns "Unable to find application named 1Password".
-- Fact: This session cannot restart the app, kill the stale helpers, or complete revocation. Native Terminal was reported working by another session. That was not re-verified here.
+Keep action and reusable-workflow references pinned to full commit SHAs. Review
+vendor updates and validate callers after pin changes. Use [1Password's action
+documentation](https://www.1password.dev/ci-cd/github-actions) for supported inputs.
+[GAP_ANALYSIS.md](GAP_ANALYSIS.md) preserves historical proposals and incidents;
+revalidate its unresolved items before acting. Git history retains prior run
+inventories and device-local diagnostics; they are not current operating state.

@@ -1,9 +1,21 @@
 # Empathy-First-Media/.github
 
-Fact: Org workflow templates live in `workflow-templates/`. New org repos:
-Actions > New workflow > "1Password Secrets" adds the smoke workflow.
-Fact: Verified 2026-10-15. One org Actions secret `OP_SERVICE_ACCOUNT_TOKEN`, visibility Private repositories. Service account `GitHub Actions - Automation - Read` reads vault `Automation` (`zacszu4fq4wmuk7qnp7ehvhhxa`) only.
-Fact: Org variable `OP_VAULT_ID` is `zacszu4fq4wmuk7qnp7ehvhhxa`, visibility Private repositories.
-Good Pattern: After `gh auth refresh -h github.com -s admin:org`, set the bootstrap token once. Never print the token.
-`op read 'op://zacszu4fq4wmuk7qnp7ehvhhxa/<sa-item-id>/credential' | gh secret set OP_SERVICE_ACCOUNT_TOKEN --org Empathy-First-Media --visibility private`
-Bad Pattern: `--visibility all`, a per-repo bootstrap script, or a service account that can read Development.
+Shared GitHub Actions workflows and organization workflow templates.
+
+## 1Password canary
+
+Use **Actions > New workflow > 1Password Secrets** to install
+[the caller template](workflow-templates/op-secrets.yml) in a private repository.
+It pins the shared canary and passes only these named organization Actions secrets:
+
+- `OP_SERVICE_ACCOUNT_TOKEN`: a service-account token with read access to the Automation vault only.
+- `OP_SA_CANARY_REF`: an ID-based `op://<vault-id>/<item-id>/<field>` reference to the dedicated canary.
+
+Set both secrets to **Private repositories** visibility and confirm the caller
+can access them. Keep the canary value in 1Password. The workflow checks its
+inputs, loads through the pinned vendor action, and requires a nonempty result
+without printing secret values.
+
+See [OP_RUNBOOK.md](OP_RUNBOOK.md) for setup, the current pinned contract,
+rotation, and troubleshooting. [GAP_ANALYSIS.md](GAP_ANALYSIS.md) is historical
+context; its account states, run results, and proposed work require revalidation.

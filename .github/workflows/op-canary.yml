@@ -1,8 +1,13 @@
-# Vendor-only canary. No custom shell. Failure is the action's own failure.
+# Load the canary through the vendor action and require a nonempty result.
 # Pin: 1password/load-secrets-action v5.0.1
 name: op-canary
 on:
-  workflow_call: {}
+  workflow_call:
+    secrets:
+      OP_SERVICE_ACCOUNT_TOKEN:
+        required: true
+      OP_SA_CANARY_REF:
+        required: true
 permissions:
   contents: read
 jobs:
@@ -10,8 +15,34 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - name: Validate canary inputs
+        shell: bash
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          OP_SA_CANARY_REF: ${{ secrets.OP_SA_CANARY_REF }}
+        run: |
+          if [[ -z "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
+            echo "::error::OP_SERVICE_ACCOUNT_TOKEN must be set."
+            exit 1
+          fi
+          case "$OP_SA_CANARY_REF" in
+            op://?*) ;;
+            *) echo "::error::OP_SA_CANARY_REF must be a nonempty 1Password secret reference."; exit 1 ;;
+          esac
       - name: Load canary secret from 1Password
+        id: load_canary
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: false
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           OP_SA_CANARY: ${{ secrets.OP_SA_CANARY_REF }}
+      - name: Require a resolved canary
+        shell: bash
+        env:
+          OP_SA_CANARY: ${{ steps.load_canary.outputs.OP_SA_CANARY }}
+        run: |
+          if [[ -z "$OP_SA_CANARY" ]]; then
+            echo "::error::1Password did not resolve a nonempty canary."
+            exit 1
+          fi
